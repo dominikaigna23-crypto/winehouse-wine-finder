@@ -209,7 +209,4 @@ wines = [
         "notes": "cherry herbs red fruit earthy",
         "status": "Proposed",
         "image": None
-    },
-
-    {
-
+    }
