@@ -315,7 +315,49 @@ wines = [
 ]
 
 
-UNKNOWN = "I don't remember"
+def interpret_with_ai(description):
+    if not description.strip():
+        return None
+
+    prompt = f"""
+You are helping a wine search system interpret a user's memory of a wine.
+
+The user wrote:
+"{description}"
+
+Extract useful wine characteristics from the description.
+
+Return ONLY valid JSON in exactly this format:
+{{
+    "colour": "",
+    "country": "",
+    "style": "",
+    "flavours": [],
+    "other_clues": []
+}}
+
+Rules:
+- Do not identify or invent a specific wine.
+- Only extract or reasonably interpret characteristics from the user's description.
+- If something is unknown, use an empty string or empty list.
+- Keep flavour words short and useful for matching wine records.
+"""
+
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+
+        text = response.text.strip()
+
+        if text.startswith("```"):
+            text = text.replace("```json", "").replace("```", "").strip()
+
+        return json.loads(text)
+
+    except Exception:
+        return None
 
 
 # ---------------------------------------------------------
