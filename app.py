@@ -1,486 +1,215 @@
 import streamlit as st
-from datetime import datetime
+
+# ---------------------------------------------------------
+# PAGE SETTINGS
+# ---------------------------------------------------------
 
 st.set_page_config(
     page_title="WineHouse Wine Finder",
-    page_icon="🍷",
     layout="wide"
 )
 
 # ---------------------------------------------------------
-# DEMO DATA
-# Replace this later with exported Azure data.
-# Each tasting contains six wines.
+# SIMPLE WINEHOUSE STYLING
+# ---------------------------------------------------------
+
+st.markdown(
+    """
+    <style>
+    .block-container {
+        max-width: 1100px;
+        padding-top: 2.5rem;
+        padding-bottom: 4rem;
+    }
+
+    h1, h2, h3 {
+        color: #6f1734;
+    }
+
+    div.stButton > button {
+        background-color: #7a1f3d;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        min-height: 46px;
+    }
+
+    div.stButton > button:hover {
+        background-color: #5e142f;
+        color: white;
+    }
+
+    .wine-card {
+        padding: 18px;
+        border: 1px solid #e5e5e5;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        background-color: #ffffff;
+    }
+
+    .wine-label {
+        color: #737373;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .wine-name {
+        color: #6f1734;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .wine-details {
+        color: #333333;
+        line-height: 1.6;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# ---------------------------------------------------------
+# DATA
+#
+# IMPORTANT:
+# This is temporary synthetic demonstration data.
+# Later we will replace this with your real Azure data.
+#
+# Pictures:
+# If image is None, the app simply shows no picture.
+#
+# Later we can add:
+# "image": "images/wine-name.jpg"
 # ---------------------------------------------------------
 
 wines = [
+
+    # GREEK WINES & MEZE
+
     {
         "event": "13 March 2026 | Greek Wines & Meze",
-        "date": "2026-03-13",
+        "date": "13 March 2026",
         "name": "Santorini Assyrtiko",
         "type": "White",
         "country": "Greece",
         "style": "Dry",
         "notes": "crisp citrus lemon mineral salty fresh",
-        "status": "Proposed"
+        "status": "Proposed",
+        "image": None
     },
+
     {
         "event": "13 March 2026 | Greek Wines & Meze",
-        "date": "2026-03-13",
+        "date": "13 March 2026",
         "name": "Moschofilero",
         "type": "White",
         "country": "Greece",
         "style": "Aromatic",
         "notes": "floral rose citrus light fresh",
-        "status": "Proposed"
+        "status": "Proposed",
+        "image": None
     },
+
     {
         "event": "13 March 2026 | Greek Wines & Meze",
-        "date": "2026-03-13",
+        "date": "13 March 2026",
         "name": "Agiorgitiko",
         "type": "Red",
         "country": "Greece",
         "style": "Medium-bodied",
         "notes": "red berries cherry soft spice",
-        "status": "Proposed"
+        "status": "Proposed",
+        "image": None
     },
+
     {
         "event": "13 March 2026 | Greek Wines & Meze",
-        "date": "2026-03-13",
+        "date": "13 March 2026",
         "name": "Xinomavro",
         "type": "Red",
         "country": "Greece",
         "style": "Full-bodied",
         "notes": "dark fruit tomato herbs earthy tannins",
-        "status": "Proposed"
+        "status": "Proposed",
+        "image": None
     },
+
     {
         "event": "13 March 2026 | Greek Wines & Meze",
-        "date": "2026-03-13",
+        "date": "13 March 2026",
         "name": "Greek Rosé",
         "type": "Rosé",
         "country": "Greece",
         "style": "Dry",
         "notes": "strawberry watermelon fresh light",
-        "status": "Proposed"
+        "status": "Proposed",
+        "image": None
     },
+
     {
         "event": "13 March 2026 | Greek Wines & Meze",
-        "date": "2026-03-13",
+        "date": "13 March 2026",
         "name": "Mavrodaphne",
         "type": "Dessert",
         "country": "Greece",
         "style": "Sweet",
         "notes": "raisins dried fruit caramel sweet",
-        "status": "Proposed"
+        "status": "Proposed",
+        "image": None
     },
+
+    # ITALIAN SUMMER WINES
+
     {
         "event": "10 July 2026 | Italian Summer Wines",
-        "date": "2026-07-10",
+        "date": "10 July 2026",
         "name": "Pinot Grigio",
         "type": "White",
         "country": "Italy",
         "style": "Light",
         "notes": "pear citrus crisp light refreshing",
-        "status": "Proposed"
+        "status": "Proposed",
+        "image": None
     },
+
     {
         "event": "10 July 2026 | Italian Summer Wines",
-        "date": "2026-07-10",
+        "date": "10 July 2026",
         "name": "Vermentino",
         "type": "White",
         "country": "Italy",
         "style": "Dry",
         "notes": "lemon herbs mineral salty fresh",
-        "status": "Proposed"
+        "status": "Proposed",
+        "image": None
     },
+
     {
         "event": "10 July 2026 | Italian Summer Wines",
-        "date": "2026-07-10",
+        "date": "10 July 2026",
         "name": "Prosecco",
         "type": "Sparkling",
         "country": "Italy",
         "style": "Fresh",
         "notes": "apple pear floral light bubbles",
-        "status": "Proposed"
+        "status": "Proposed",
+        "image": None
     },
+
     {
         "event": "10 July 2026 | Italian Summer Wines",
-        "date": "2026-07-10",
+        "date": "10 July 2026",
         "name": "Chianti Classico",
         "type": "Red",
         "country": "Italy",
         "style": "Medium-bodied",
         "notes": "cherry herbs red fruit earthy",
-        "status": "Proposed"
+        "status": "Proposed",
+        "image": None
     },
+
     {
-        "event": "10 July 2026 | Italian Summer Wines",
-        "date": "2026-07-10",
-        "name": "Valpolicella",
-        "type": "Red",
-        "country": "Italy",
-        "style": "Light",
-        "notes": "sour cherry red berries light soft",
-        "status": "Proposed"
-    },
-    {
-        "event": "10 July 2026 | Italian Summer Wines",
-        "date": "2026-07-10",
-        "name": "Italian Rosato",
-        "type": "Rosé",
-        "country": "Italy",
-        "style": "Dry",
-        "notes": "strawberry peach fresh summer",
-        "status": "Proposed"
-    },
-    {
-        "event": "9 October 2026 | Autumn Reds",
-        "date": "2026-10-09",
-        "name": "Primitivo",
-        "type": "Red",
-        "country": "Italy",
-        "style": "Full-bodied",
-        "notes": "plum blackberry jam spice rich",
-        "status": "Proposed"
-    },
-    {
-        "event": "9 October 2026 | Autumn Reds",
-        "date": "2026-10-09",
-        "name": "Italian Pinot Noir",
-        "type": "Red",
-        "country": "Italy",
-        "style": "Light",
-        "notes": "cherry raspberry earthy light",
-        "status": "Proposed"
-    },
-    {
-        "event": "9 October 2026 | Autumn Reds",
-        "date": "2026-10-09",
-        "name": "French Pinot Noir",
-        "type": "Red",
-        "country": "France",
-        "style": "Light",
-        "notes": "red berries cherry mushroom earthy",
-        "status": "Proposed"
-    },
-    {
-        "event": "9 October 2026 | Autumn Reds",
-        "date": "2026-10-09",
-        "name": "Rioja Reserva",
-        "type": "Red",
-        "country": "Spain",
-        "style": "Full-bodied",
-        "notes": "dark cherry vanilla oak spice",
-        "status": "Proposed"
-    },
-    {
-        "event": "9 October 2026 | Autumn Reds",
-        "date": "2026-10-09",
-        "name": "Malbec",
-        "type": "Red",
-        "country": "Argentina",
-        "style": "Full-bodied",
-        "notes": "blackberry plum chocolate rich",
-        "status": "Proposed"
-    },
-    {
-        "event": "9 October 2026 | Autumn Reds",
-        "date": "2026-10-09",
-        "name": "Côtes du Rhône",
-        "type": "Red",
-        "country": "France",
-        "style": "Medium-bodied",
-        "notes": "black fruit pepper herbs spice",
-        "status": "Proposed"
-    }
-]
-
-UNKNOWN = "I don't remember"
-
-
-# ---------------------------------------------------------
-# HELPER FUNCTIONS
-# ---------------------------------------------------------
-
-def normalise(text):
-    return str(text).lower().strip()
-
-
-def calculate_match(wine, selected_type, selected_country,
-                    selected_style, taste_words):
-    score = 0
-    reasons = []
-
-    if selected_type != UNKNOWN:
-        if normalise(wine["type"]) == normalise(selected_type):
-            score += 4
-            reasons.append(f"{wine['type']} wine")
-        else:
-            score -= 2
-
-    if selected_country != UNKNOWN:
-        if normalise(wine["country"]) == normalise(selected_country):
-            score += 4
-            reasons.append(f"from {wine['country']}")
-        else:
-            score -= 2
-
-    if selected_style != UNKNOWN:
-        if normalise(selected_style) in normalise(wine["style"]):
-            score += 3
-            reasons.append(f"{wine['style']} style")
-
-    if taste_words:
-        searchable_text = normalise(
-            wine["name"] + " " +
-            wine["type"] + " " +
-            wine["country"] + " " +
-            wine["style"] + " " +
-            wine["notes"]
-        )
-
-        words = [
-            word.strip(".,!?")
-            for word in normalise(taste_words).split()
-            if len(word.strip(".,!?")) >= 3
-        ]
-
-        matched_words = []
-
-        for word in words:
-            if word in searchable_text:
-                score += 2
-                matched_words.append(word)
-
-        if matched_words:
-            reasons.append(
-                "matching description: " +
-                ", ".join(matched_words[:5])
-            )
-
-    return score, reasons
-
-
-# ---------------------------------------------------------
-# PAGE HEADER
-# ---------------------------------------------------------
-
-st.title("🍷 WineHouse Wine Finder")
-
-st.write(
-    "Help a guest identify a wine remembered from a past tasting. "
-    "Enter only the details the guest remembers."
-)
-
-st.info(
-    "Prototype notice: This version uses synthetic demonstration data. "
-    "Suggested wines must be verified against the event record. "
-    "The application does not confirm current stock availability."
-)
-
-# ---------------------------------------------------------
-# TASTING SELECTION
-# ---------------------------------------------------------
-
-st.subheader("1. Which tasting does the guest remember?")
-
-event_names = sorted(set(wine["event"] for wine in wines))
-event_options = [UNKNOWN] + event_names
-
-selected_event = st.selectbox(
-    "Tasting date and theme",
-    event_options
-)
-
-if selected_event != UNKNOWN:
-    candidate_wines = [
-        wine for wine in wines
-        if wine["event"] == selected_event
-    ]
-
-    st.success(
-        f"{len(candidate_wines)} wines are linked to this tasting."
-    )
-
-    with st.expander("Show wines linked to this tasting"):
-        for wine in candidate_wines:
-            st.markdown(
-                f"**{wine['name']}**  \n"
-                f"{wine['type']} | {wine['country']} | "
-                f"{wine['style']} | Status: {wine['status']}"
-            )
-else:
-    candidate_wines = wines
-
-    st.caption(
-        "The tasting is unknown, so the finder will search across "
-        "all available tasting-wine records."
-    )
-
-# ---------------------------------------------------------
-# WINE DESCRIPTION
-# ---------------------------------------------------------
-
-st.subheader("2. What does the guest remember?")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    wine_types = sorted(set(wine["type"] for wine in wines))
-
-    selected_type = st.selectbox(
-        "Wine colour or type",
-        [UNKNOWN] + wine_types
-    )
-
-    countries = sorted(set(wine["country"] for wine in wines))
-
-    selected_country = st.selectbox(
-        "Country of origin",
-        [UNKNOWN] + countries
-    )
-
-with col2:
-    styles = sorted(set(wine["style"] for wine in wines))
-
-    selected_style = st.selectbox(
-        "Wine style",
-        [UNKNOWN] + styles
-    )
-
-    taste_words = st.text_input(
-        "Taste, smell or other details",
-        placeholder="For example: cherry, citrus, mineral, light, sweet..."
-    )
-
-# ---------------------------------------------------------
-# SEARCH BUTTON
-# ---------------------------------------------------------
-
-st.subheader("3. Find likely matches")
-
-if st.button("🔎 Find my wine", type="primary", use_container_width=True):
-
-    remembered_answers = 0
-
-    if selected_event != UNKNOWN:
-        remembered_answers += 1
-
-    if selected_type != UNKNOWN:
-        remembered_answers += 1
-
-    if selected_country != UNKNOWN:
-        remembered_answers += 1
-
-    if selected_style != UNKNOWN:
-        remembered_answers += 1
-
-    if taste_words.strip():
-        remembered_answers += 1
-
-    if remembered_answers == 0:
-        st.warning(
-            "Not enough information to identify the wine. "
-            "Please add at least one remembered detail."
-        )
-
-    else:
-        ranked_results = []
-
-        for wine in candidate_wines:
-            score, reasons = calculate_match(
-                wine,
-                selected_type,
-                selected_country,
-                selected_style,
-                taste_words
-            )
-
-            ranked_results.append({
-                "wine": wine,
-                "score": score,
-                "reasons": reasons
-            })
-
-        ranked_results.sort(
-            key=lambda result: result["score"],
-            reverse=True
-        )
-
-        positive_results = [
-            result for result in ranked_results
-            if result["score"] > 0
-        ]
-
-        if not positive_results:
-            st.warning(
-                "No confident match was found. Try changing one answer "
-                "or adding another taste or smell detail."
-            )
-
-        else:
-            st.subheader("Most likely matches")
-
-            top_results = positive_results[:3]
-
-            for position, result in enumerate(top_results, start=1):
-                wine = result["wine"]
-                score = result["score"]
-                reasons = result["reasons"]
-
-                if score >= 8:
-                    confidence = "Strong possible match"
-                elif score >= 4:
-                    confidence = "Possible match"
-                else:
-                    confidence = "Weak possible match"
-
-                with st.container(border=True):
-                    st.markdown(
-                        f"### {position}. {wine['name']}"
-                    )
-
-                    st.write(
-                        f"**{wine['type']} | {wine['country']} | "
-                        f"{wine['style']}**"
-                    )
-
-                    st.write(
-                        f"**Tasting:** {wine['event']}"
-                    )
-
-                    st.write(
-                        f"**Stored notes:** {wine['notes']}"
-                    )
-
-                    if reasons:
-                        st.write(
-                            "**Why it may match:** " +
-                            "; ".join(reasons)
-                        )
-
-                    st.write(
-                        f"**Confidence:** {confidence}"
-                    )
-
-                    st.caption(
-                        f"Event-wine status: {wine['status']}"
-                    )
-
-            st.warning(
-                "Staff verification required: confirm the wine against "
-                "the event record and check current availability before "
-                "answering the guest."
-            )
-
-# ---------------------------------------------------------
-# FOOTER
-# ---------------------------------------------------------
-
-st.divider()
-
-st.caption(
-    "WineHouse Wine Finder | Data and AI project prototype | "
-    "Synthetic demonstration data"
-)
+        "event": "10 July 2026 
