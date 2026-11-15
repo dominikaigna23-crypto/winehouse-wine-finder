@@ -2,24 +2,99 @@ import streamlit as st
 import json
 from google import genai
 
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
-# ---------------------------------------------------------
-# PAGE SETTINGS
-# ---------------------------------------------------------
+# =========================================================
+# SETTINGS
+# =========================================================
 
 st.set_page_config(
     page_title="WineHouse Wine Finder",
     layout="wide"
 )
 
-# ---------------------------------------------------------
-# SIMPLE WINEHOUSE STYLING
-# ---------------------------------------------------------
+UNKNOWN = "I don't remember"
+
+
+# =========================================================
+# GEMINI AI
+# =========================================================
+
+client = genai.Client(
+    api_key=st.secrets["GEMINI_API_KEY"]
+)
+
+
+def interpret_with_ai(description):
+
+    if not description.strip():
+        return None
+
+    prompt = f"""
+You are the AI interpretation component of a wine search application.
+
+A user is trying to identify a wine from a tasting.
+
+The user wrote:
+
+"{description}"
+
+Interpret the description into useful wine characteristics.
+
+Return ONLY valid JSON in exactly this structure:
+
+{{
+    "colour": "",
+    "country": "",
+    "style": "",
+    "flavours": [],
+    "other_clues": []
+}}
+
+Instructions:
+
+- Do not guess a specific wine.
+- Do not invent information that the user did not imply.
+- You may translate everyday language into useful wine characteristics.
+- Example: "not heavy" may mean "light".
+- Example: "cherries" may become "cherry".
+- Example: "fresh and lemony" may become ["fresh", "lemon", "citrus"].
+- Example: "kind of salty" may become ["salty", "mineral"].
+- If colour, country or style cannot reasonably be inferred, return an empty string.
+- Keep flavour terms short.
+- Return JSON only.
+"""
+
+    try:
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+
+        text = response.text.strip()
+
+        if text.startswith("```"):
+            text = (
+                text
+                .replace("```json", "")
+                .replace("```", "")
+                .strip()
+            )
+
+        return json.loads(text)
+
+    except Exception:
+        return None
+
+
+# =========================================================
+# STYLE
+# =========================================================
 
 st.markdown(
     """
     <style>
+
     .block-container {
         max-width: 1100px;
         padding-top: 2.5rem;
@@ -27,75 +102,46 @@ st.markdown(
     }
 
     h1, h2, h3 {
-        color: #6f1734;
+        color: #6d1835;
     }
 
     div.stButton > button {
-        background-color: #7a1f3d;
+        background-color: #751d3b;
         color: white;
         border: none;
         border-radius: 6px;
+        min-height: 48px;
         font-weight: 600;
-        min-height: 46px;
     }
 
     div.stButton > button:hover {
-        background-color: #5e142f;
+        background-color: #57142c;
         color: white;
     }
 
-    .wine-card {
-        padding: 18px;
-        border: 1px solid #e5e5e5;
-        border-radius: 10px;
-        margin-bottom: 12px;
-        background-color: #ffffff;
-    }
-
-    .wine-label {
-        color: #737373;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-    }
-
-    .wine-name {
-        color: #6f1734;
-        font-size: 1.4rem;
-        font-weight: 700;
-        margin-bottom: 6px;
-    }
-
-    .wine-details {
-        color: #333333;
-        line-height: 1.6;
-    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# ---------------------------------------------------------
-# DATA
+
+# =========================================================
+# TEMPORARY DEMONSTRATION DATA
 #
-# IMPORTANT:
-# This is temporary synthetic demonstration data.
-# Later we will replace this with your real Azure data.
+# We will replace this with the real Azure records later.
 #
-# Pictures:
-# If image is None, the app simply shows no picture.
-#
-# Later we can add:
-# "image": "images/wine-name.jpg"
-# ---------------------------------------------------------
+# Add a picture later like:
+# "image": "images/chianti.jpg"
+# =========================================================
 
 wines = [
 
+    # -----------------------------------------------------
     # GREEK WINES & MEZE
+    # -----------------------------------------------------
 
     {
         "event": "13 March 2026 | Greek Wines & Meze",
-        "date": "13 March 2026",
         "name": "Santorini Assyrtiko",
         "type": "White",
         "country": "Greece",
@@ -107,7 +153,6 @@ wines = [
 
     {
         "event": "13 March 2026 | Greek Wines & Meze",
-        "date": "13 March 2026",
         "name": "Moschofilero",
         "type": "White",
         "country": "Greece",
@@ -119,7 +164,6 @@ wines = [
 
     {
         "event": "13 March 2026 | Greek Wines & Meze",
-        "date": "13 March 2026",
         "name": "Agiorgitiko",
         "type": "Red",
         "country": "Greece",
@@ -131,19 +175,17 @@ wines = [
 
     {
         "event": "13 March 2026 | Greek Wines & Meze",
-        "date": "13 March 2026",
         "name": "Xinomavro",
         "type": "Red",
         "country": "Greece",
         "style": "Full-bodied",
-        "notes": "dark fruit tomato herbs earthy tannins",
+        "notes": "dark fruit herbs earthy tannins",
         "status": "Proposed",
         "image": None
     },
 
     {
         "event": "13 March 2026 | Greek Wines & Meze",
-        "date": "13 March 2026",
         "name": "Greek Rosé",
         "type": "Rosé",
         "country": "Greece",
@@ -155,7 +197,6 @@ wines = [
 
     {
         "event": "13 March 2026 | Greek Wines & Meze",
-        "date": "13 March 2026",
         "name": "Mavrodaphne",
         "type": "Dessert",
         "country": "Greece",
@@ -165,23 +206,24 @@ wines = [
         "image": None
     },
 
+
+    # -----------------------------------------------------
     # ITALIAN SUMMER WINES
+    # -----------------------------------------------------
 
     {
         "event": "10 July 2026 | Italian Summer Wines",
-        "date": "10 July 2026",
         "name": "Pinot Grigio",
         "type": "White",
         "country": "Italy",
         "style": "Light",
-        "notes": "pear citrus crisp light refreshing",
+        "notes": "pear citrus crisp refreshing",
         "status": "Proposed",
         "image": None
     },
 
     {
         "event": "10 July 2026 | Italian Summer Wines",
-        "date": "10 July 2026",
         "name": "Vermentino",
         "type": "White",
         "country": "Italy",
@@ -193,7 +235,6 @@ wines = [
 
     {
         "event": "10 July 2026 | Italian Summer Wines",
-        "date": "10 July 2026",
         "name": "Prosecco",
         "type": "Sparkling",
         "country": "Italy",
@@ -205,7 +246,6 @@ wines = [
 
     {
         "event": "10 July 2026 | Italian Summer Wines",
-        "date": "10 July 2026",
         "name": "Chianti Classico",
         "type": "Red",
         "country": "Italy",
@@ -217,7 +257,6 @@ wines = [
 
     {
         "event": "10 July 2026 | Italian Summer Wines",
-        "date": "10 July 2026",
         "name": "Valpolicella",
         "type": "Red",
         "country": "Italy",
@@ -229,7 +268,6 @@ wines = [
 
     {
         "event": "10 July 2026 | Italian Summer Wines",
-        "date": "10 July 2026",
         "name": "Italian Rosato",
         "type": "Rosé",
         "country": "Italy",
@@ -239,11 +277,13 @@ wines = [
         "image": None
     },
 
+
+    # -----------------------------------------------------
     # AUTUMN REDS
+    # -----------------------------------------------------
 
     {
         "event": "9 October 2026 | Autumn Reds",
-        "date": "9 October 2026",
         "name": "Primitivo",
         "type": "Red",
         "country": "Italy",
@@ -255,7 +295,6 @@ wines = [
 
     {
         "event": "9 October 2026 | Autumn Reds",
-        "date": "9 October 2026",
         "name": "Italian Pinot Noir",
         "type": "Red",
         "country": "Italy",
@@ -267,7 +306,6 @@ wines = [
 
     {
         "event": "9 October 2026 | Autumn Reds",
-        "date": "9 October 2026",
         "name": "French Pinot Noir",
         "type": "Red",
         "country": "France",
@@ -279,7 +317,6 @@ wines = [
 
     {
         "event": "9 October 2026 | Autumn Reds",
-        "date": "9 October 2026",
         "name": "Rioja Reserva",
         "type": "Red",
         "country": "Spain",
@@ -291,7 +328,6 @@ wines = [
 
     {
         "event": "9 October 2026 | Autumn Reds",
-        "date": "9 October 2026",
         "name": "Malbec",
         "type": "Red",
         "country": "Argentina",
@@ -303,7 +339,6 @@ wines = [
 
     {
         "event": "9 October 2026 | Autumn Reds",
-        "date": "9 October 2026",
         "name": "Côtes du Rhône",
         "type": "Red",
         "country": "France",
@@ -312,57 +347,13 @@ wines = [
         "status": "Proposed",
         "image": None
     }
+
 ]
 
 
-def interpret_with_ai(description):
-    if not description.strip():
-        return None
-
-    prompt = f"""
-You are helping a wine search system interpret a user's memory of a wine.
-
-The user wrote:
-"{description}"
-
-Extract useful wine characteristics from the description.
-
-Return ONLY valid JSON in exactly this format:
-{{
-    "colour": "",
-    "country": "",
-    "style": "",
-    "flavours": [],
-    "other_clues": []
-}}
-
-Rules:
-- Do not identify or invent a specific wine.
-- Only extract or reasonably interpret characteristics from the user's description.
-- If something is unknown, use an empty string or empty list.
-- Keep flavour words short and useful for matching wine records.
-"""
-
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
-        )
-
-        text = response.text.strip()
-
-        if text.startswith("```"):
-            text = text.replace("```json", "").replace("```", "").strip()
-
-        return json.loads(text)
-
-    except Exception:
-        return None
-
-
-# ---------------------------------------------------------
-# FUNCTIONS
-# ---------------------------------------------------------
+# =========================================================
+# MATCHING FUNCTIONS
+# =========================================================
 
 def normalise(value):
     return str(value).lower().strip()
@@ -373,35 +364,76 @@ def calculate_match(
     selected_type,
     selected_country,
     selected_style,
-    description
+    ai_description
 ):
+
     score = 0
     reasons = []
 
-    # Wine type
+
+    # -----------------------------------------------------
+    # TYPE
+    # -----------------------------------------------------
+
     if selected_type != UNKNOWN:
+
         if normalise(wine["type"]) == normalise(selected_type):
-            score += 4
-            reasons.append(wine["type"])
-        else:
-            score -= 2
 
-    # Country
+            score += 5
+
+            reasons.append(
+                f"matches the selected {wine['type']} type"
+            )
+
+        else:
+            score -= 3
+
+
+    # -----------------------------------------------------
+    # COUNTRY
+    # -----------------------------------------------------
+
     if selected_country != UNKNOWN:
-        if normalise(wine["country"]) == normalise(selected_country):
-            score += 4
-            reasons.append(wine["country"])
+
+        if normalise(wine["country"]) == normalise(
+            selected_country
+        ):
+
+            score += 5
+
+            reasons.append(
+                f"matches {wine['country']}"
+            )
+
         else:
-            score -= 2
+            score -= 3
 
-    # Style
+
+    # -----------------------------------------------------
+    # STYLE
+    # -----------------------------------------------------
+
     if selected_style != UNKNOWN:
-        if normalise(selected_style) in normalise(wine["style"]):
-            score += 3
-            reasons.append(wine["style"])
 
-    # Free-text description
-    if description.strip():
+        if normalise(selected_style) in normalise(
+            wine["style"]
+        ):
+
+            score += 4
+
+            reasons.append(
+                f"matches the {wine['style']} style"
+            )
+
+        else:
+            score -= 1
+
+
+    # -----------------------------------------------------
+    # AI-INTERPRETED DESCRIPTION
+    # -----------------------------------------------------
+
+    if ai_description.strip():
 
         searchable_text = normalise(
             wine["name"]
@@ -417,51 +449,79 @@ def calculate_match(
 
         words = [
             word.strip(".,!?;:")
-            for word in normalise(description).split()
-            if len(word.strip(".,!?;:")) >= 3
+            for word in normalise(
+                ai_description
+            ).split()
+            if len(
+                word.strip(".,!?;:")
+            ) >= 3
         ]
 
         matched_words = []
 
         for word in words:
+
             if word in searchable_text:
+
                 score += 2
+
                 matched_words.append(word)
 
+
         if matched_words:
-            reasons.append(
-                "matching notes: "
-                + ", ".join(matched_words[:5])
+
+            unique_words = list(
+                dict.fromkeys(matched_words)
             )
+
+            reasons.append(
+                "matching characteristics: "
+                + ", ".join(unique_words[:5])
+            )
+
 
     return score, reasons
 
 
-def show_wine(wine, number=None, reasons=None, confidence=None):
+# =========================================================
+# DISPLAY WINE
+# =========================================================
 
-    image_column, text_column = st.columns([1, 3])
+def show_wine(
+    wine,
+    number=None,
+    reasons=None,
+    confidence=None
+):
 
-    with image_column:
+    picture, details = st.columns(
+        [1, 3]
+    )
+
+
+    with picture:
 
         if wine.get("image"):
+
             st.image(
                 wine["image"],
                 use_container_width=True
             )
+
         else:
+
             st.markdown(
                 """
                 <div style="
                     height:190px;
-                    border:1px solid #e2e2e2;
+                    border:1px solid #dddddd;
                     border-radius:8px;
                     display:flex;
                     align-items:center;
                     justify-content:center;
-                    color:#999999;
-                    background:#fafafa;
                     text-align:center;
-                    padding:15px;
+                    color:#888888;
+                    background:#fafafa;
                 ">
                     Wine image<br>coming soon
                 </div>
@@ -469,12 +529,17 @@ def show_wine(wine, number=None, reasons=None, confidence=None):
                 unsafe_allow_html=True
             )
 
-    with text_column:
+
+    with details:
 
         if number:
-            st.caption(f"Match {number}")
+            st.caption(
+                f"Match {number}"
+            )
 
-        st.markdown(f"### {wine['name']}")
+        st.markdown(
+            f"### {wine['name']}"
+        )
 
         st.write(
             f"{wine['type']} | "
@@ -483,58 +548,75 @@ def show_wine(wine, number=None, reasons=None, confidence=None):
         )
 
         st.write(
-            f"**Tasting:** {wine['event']}"
+            f"**Tasting:** "
+            f"{wine['event']}"
         )
 
         st.write(
-            f"**Tasting notes:** {wine['notes']}"
+            f"**Tasting characteristics:** "
+            f"{wine['notes']}"
         )
 
+
         if reasons:
+
             st.write(
                 "**Why this may match:** "
                 + "; ".join(reasons)
             )
 
+
         if confidence:
+
             st.write(
-                f"**Match confidence:** {confidence}"
+                f"**Match confidence:** "
+                f"{confidence}"
             )
 
+
         st.caption(
-            f"Event-wine record status: {wine['status']}"
+            "Event-wine record status: "
+            + wine["status"]
         )
 
 
-# ---------------------------------------------------------
+# =========================================================
 # HEADER
-# ---------------------------------------------------------
+# =========================================================
 
-st.title("WineHouse Wine Finder")
+st.title(
+    "WineHouse Wine Finder"
+)
 
 st.write(
-    "Trying to find a wine from a WineHouse tasting? "
-    "Choose the details you remember and the Wine Finder "
-    "will search the available tasting records for possible matches."
+    "Find a wine from a WineHouse tasting using "
+    "whatever details you remember."
 )
 
 st.caption(
-    "You do not need to remember every detail. "
+    "You do not need to remember everything. "
     "Choose 'I don't remember' whenever you are unsure."
 )
 
 st.divider()
 
 
-# ---------------------------------------------------------
+# =========================================================
 # STEP 1 - TASTING
-# ---------------------------------------------------------
+# =========================================================
 
-st.subheader("1. Do you remember the tasting?")
+st.subheader(
+    "1. Do you remember the tasting?"
+)
+
 
 event_names = sorted(
-    set(wine["event"] for wine in wines)
+    set(
+        wine["event"]
+        for wine in wines
+    )
 )
+
 
 selected_event = st.selectbox(
     "Tasting date and theme",
@@ -547,29 +629,34 @@ if selected_event != UNKNOWN:
     candidate_wines = [
         wine
         for wine in wines
-        if wine["event"] == selected_event
+        if wine["event"]
+        == selected_event
     ]
 
-    st.write(
-        f"**{len(candidate_wines)} wines are linked "
-        "to this tasting record.**"
+
+    st.success(
+        f"{len(candidate_wines)} wines "
+        "are linked to this tasting."
     )
 
+
     with st.expander(
-        "View wines from this tasting",
-        expanded=True
+        "View wines from this tasting"
     ):
 
         for wine in candidate_wines:
+
             show_wine(wine)
+
             st.divider()
+
 
 else:
 
     candidate_wines = wines
 
     st.info(
-        "No problem. The Wine Finder will search across "
+        "That's fine. The search will use "
         "all available tasting-wine records."
     )
 
@@ -577,11 +664,14 @@ else:
 st.divider()
 
 
-# ---------------------------------------------------------
-# STEP 2 - DETAILS
-# ---------------------------------------------------------
+# =========================================================
+# STEP 2 - REMEMBERED DETAILS
+# =========================================================
 
-st.subheader("2. What do you remember about the wine?")
+st.subheader(
+    "2. What do you remember about the wine?"
+)
+
 
 column1, column2 = st.columns(2)
 
@@ -589,8 +679,12 @@ column1, column2 = st.columns(2)
 with column1:
 
     wine_types = sorted(
-        set(wine["type"] for wine in wines)
+        set(
+            wine["type"]
+            for wine in wines
+        )
     )
+
 
     selected_type = st.selectbox(
         "Wine colour or type",
@@ -599,8 +693,12 @@ with column1:
 
 
     countries = sorted(
-        set(wine["country"] for wine in wines)
+        set(
+            wine["country"]
+            for wine in wines
+        )
     )
+
 
     selected_country = st.selectbox(
         "Country of origin",
@@ -611,8 +709,12 @@ with column1:
 with column2:
 
     styles = sorted(
-        set(wine["style"] for wine in wines)
+        set(
+            wine["style"]
+            for wine in wines
+        )
     )
+
 
     selected_style = st.selectbox(
         "Style",
@@ -620,23 +722,33 @@ with column2:
     )
 
 
-    description = st.text_input(
-        "Taste, smell or anything else you remember",
+    description = st.text_area(
+        "Describe anything else you remember",
         placeholder=(
-            "For example: cherry, citrus, mineral, "
-            "light, sweet, spicy..."
-        )
+            "For example: it was light and fruity, "
+            "tasted like cherries, and I think "
+            "it was Italian."
+        ),
+        height=110
     )
+
+
+st.caption(
+    "The description box uses AI to interpret "
+    "everyday language into wine characteristics."
+)
 
 
 st.divider()
 
 
-# ---------------------------------------------------------
-# STEP 3 - SEARCH
-# ---------------------------------------------------------
+# =========================================================
+# STEP 3 - FIND MATCH
+# =========================================================
 
-st.subheader("3. Find the wine")
+st.subheader(
+    "3. Find the wine"
+)
 
 
 if st.button(
@@ -645,37 +757,191 @@ if st.button(
     use_container_width=True
 ):
 
+
+    # -----------------------------------------------------
+    # CHECK HOW MUCH INFORMATION WE HAVE
+    # -----------------------------------------------------
+
     remembered_details = 0
+
 
     if selected_event != UNKNOWN:
         remembered_details += 1
 
+
     if selected_type != UNKNOWN:
         remembered_details += 1
+
 
     if selected_country != UNKNOWN:
         remembered_details += 1
 
+
     if selected_style != UNKNOWN:
         remembered_details += 1
+
 
     if description.strip():
         remembered_details += 1
 
 
-    # Nothing remembered
+    # -----------------------------------------------------
+    # NO INFORMATION
+    # -----------------------------------------------------
+
     if remembered_details == 0:
 
         st.warning(
-            "There isn't enough information to identify "
-            "a likely wine yet. Add at least one detail "
-            "you remember."
+            "There is not enough information "
+            "to identify a likely wine yet. "
+            "Add at least one detail you remember."
         )
 
 
     else:
 
+        # =================================================
+        # AI INTERPRETATION
+        # =================================================
+
+        ai_clues = interpret_with_ai(
+            description
+        )
+
+
+        ai_words = []
+
+
+        if ai_clues:
+
+            if ai_clues.get("colour"):
+
+                ai_words.append(
+                    ai_clues["colour"]
+                )
+
+
+            if ai_clues.get("country"):
+
+                ai_words.append(
+                    ai_clues["country"]
+                )
+
+
+            if ai_clues.get("style"):
+
+                ai_words.append(
+                    ai_clues["style"]
+                )
+
+
+            ai_words.extend(
+                ai_clues.get(
+                    "flavours",
+                    []
+                )
+            )
+
+
+            ai_words.extend(
+                ai_clues.get(
+                    "other_clues",
+                    []
+                )
+            )
+
+
+            ai_description = " ".join(
+                ai_words
+            )
+
+
+        else:
+
+            ai_description = description
+
+
+        # =================================================
+        # OPTIONAL: SHOW WHAT AI UNDERSTOOD
+        # =================================================
+
+        if description.strip():
+
+            with st.expander(
+                "What the AI understood"
+            ):
+
+                if ai_clues:
+
+                    colour = (
+                        ai_clues.get(
+                            "colour"
+                        )
+                        or "Not identified"
+                    )
+
+                    country = (
+                        ai_clues.get(
+                            "country"
+                        )
+                        or "Not identified"
+                    )
+
+                    style = (
+                        ai_clues.get(
+                            "style"
+                        )
+                        or "Not identified"
+                    )
+
+                    flavours = (
+                        ai_clues.get(
+                            "flavours"
+                        )
+                        or []
+                    )
+
+
+                    st.write(
+                        f"**Colour/type:** "
+                        f"{colour}"
+                    )
+
+                    st.write(
+                        f"**Country:** "
+                        f"{country}"
+                    )
+
+                    st.write(
+                        f"**Style:** "
+                        f"{style}"
+                    )
+
+                    st.write(
+                        "**Flavour clues:** "
+                        + (
+                            ", ".join(flavours)
+                            if flavours
+                            else "Not identified"
+                        )
+                    )
+
+
+                else:
+
+                    st.write(
+                        "AI interpretation was not "
+                        "available, so the original "
+                        "description was used."
+                    )
+
+
+        # =================================================
+        # SEARCH THE WINE RECORDS
+        # =================================================
+
         results = []
+
 
         for wine in candidate_wines:
 
@@ -684,8 +950,9 @@ if st.button(
                 selected_type,
                 selected_country,
                 selected_style,
-                description
+                ai_description
             )
+
 
             results.append(
                 {
@@ -697,7 +964,8 @@ if st.button(
 
 
         results.sort(
-            key=lambda item: item["score"],
+            key=lambda item:
+            item["score"],
             reverse=True
         )
 
@@ -709,26 +977,41 @@ if st.button(
         ]
 
 
+        # =================================================
+        # NO MATCH
+        # =================================================
+
         if not positive_results:
 
             st.warning(
-                "No confident match was found with those details. "
-                "Try removing one detail or entering another "
-                "taste, smell or style you remember."
+                "No confident match was found "
+                "with those details. Try removing "
+                "one detail or describing another "
+                "taste, smell or characteristic."
             )
 
+
+        # =================================================
+        # RESULTS
+        # =================================================
 
         else:
 
-            st.markdown("## Likely matches")
-
-            st.write(
-                "These results are ranked using the details "
-                "you entered and the available tasting records."
+            st.markdown(
+                "## Likely matches"
             )
 
 
-            top_results = positive_results[:3]
+            st.write(
+                "The results below combine the information "
+                "you selected with the characteristics "
+                "interpreted from your description."
+            )
+
+
+            top_results = (
+                positive_results[:3]
+            )
 
 
             for position, result in enumerate(
@@ -738,17 +1021,31 @@ if st.button(
 
                 score = result["score"]
 
-                if score >= 9:
-                    confidence = "Strong possible match"
 
-                elif score >= 5:
-                    confidence = "Possible match"
+                if score >= 11:
+
+                    confidence = (
+                        "Strong possible match"
+                    )
+
+
+                elif score >= 6:
+
+                    confidence = (
+                        "Possible match"
+                    )
+
 
                 else:
-                    confidence = "Weak possible match"
+
+                    confidence = (
+                        "Weak possible match"
+                    )
 
 
-                with st.container(border=True):
+                with st.container(
+                    border=True
+                ):
 
                     show_wine(
                         result["wine"],
@@ -759,20 +1056,23 @@ if st.button(
 
 
             st.info(
-                "The Wine Finder provides possible matches, "
-                "not a guaranteed identification. "
-                "Tasting records may include proposed or synthetic "
-                "event-wine selections. Current bottle availability "
-                "should be checked separately."
+                "These are possible matches rather "
+                "than guaranteed identifications. "
+                "The tasting records may contain "
+                "synthetic or proposed wine selections. "
+                "Current bottle availability should "
+                "be checked separately."
             )
 
 
-# ---------------------------------------------------------
+# =========================================================
 # FOOTER
-# ---------------------------------------------------------
+# =========================================================
 
 st.divider()
 
+
 st.caption(
-    "WineHouse Wine Finder | Data and AI project prototype"
+    "WineHouse Wine Finder | "
+    "Data and AI prototype"
 )
