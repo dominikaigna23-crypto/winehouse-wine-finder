@@ -4,7 +4,6 @@ import json
 import pandas as pd
 import streamlit as st
 from google import genai
-from google.genai import types
 
 
 # =========================================================
@@ -64,6 +63,11 @@ st.markdown(
 h1, h2, h3 {
     font-family: Georgia, "Times New Roman", serif;
     color: var(--wine-dark);
+    letter-spacing: -0.02em;
+}
+
+p, label, input, textarea, button, div {
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 .hero {
@@ -71,14 +75,29 @@ h1, h2, h3 {
     overflow: hidden;
     padding: 52px 55px;
     border-radius: 26px;
-    background: linear-gradient(
-        115deg,
-        rgba(53,9,25,0.99),
-        rgba(113,30,57,0.94)
-    );
+    background:
+        linear-gradient(
+            115deg,
+            rgba(53,9,25,0.99),
+            rgba(113,30,57,0.94)
+        );
     color: white;
     box-shadow: 0 24px 65px rgba(64,16,31,0.22);
     margin-bottom: 34px;
+}
+
+.hero::after {
+    content: "";
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    right: -75px;
+    top: -120px;
+    border: 1px solid rgba(221,203,161,0.35);
+    border-radius: 50%;
+    box-shadow:
+        0 0 0 38px rgba(221,203,161,0.055),
+        0 0 0 76px rgba(221,203,161,0.03);
 }
 
 .hero-label {
@@ -96,7 +115,8 @@ h1, h2, h3 {
     font-size: clamp(2.5rem, 6vw, 4.2rem);
     font-weight: 700;
     line-height: 1.03;
-    margin-bottom: 17px;
+    max-width: 720px;
+    margin: 0 0 17px 0;
 }
 
 .hero-text {
@@ -104,6 +124,7 @@ h1, h2, h3 {
     font-size: 1.06rem;
     line-height: 1.72;
     max-width: 700px;
+    margin: 0;
 }
 
 .age-card {
@@ -111,11 +132,12 @@ h1, h2, h3 {
     margin: 70px auto 24px auto;
     padding: 55px 48px;
     border-radius: 27px;
-    background: linear-gradient(
-        145deg,
-        rgba(53,9,25,0.99),
-        rgba(110,29,55,0.97)
-    );
+    background:
+        linear-gradient(
+            145deg,
+            rgba(53,9,25,0.99),
+            rgba(110,29,55,0.97)
+        );
     color: white;
     text-align: center;
     box-shadow: 0 30px 85px rgba(64,16,31,0.30);
@@ -126,7 +148,7 @@ h1, h2, h3 {
     font-family: Georgia, "Times New Roman", serif;
     font-size: 3.1rem;
     font-weight: 700;
-    margin: 12px 0 18px;
+    margin: 12px 0 18px 0;
 }
 
 .age-text {
@@ -134,20 +156,20 @@ h1, h2, h3 {
     line-height: 1.72;
 }
 
-.age-label,
+.age-label {
+    color: var(--gold-light);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
 .section-label {
     color: var(--gold);
     font-size: 0.76rem;
     font-weight: 700;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-}
-
-.age-label {
-    color: var(--gold-light);
-}
-
-.section-label {
     margin-top: 28px;
     margin-bottom: 3px;
 }
@@ -167,6 +189,7 @@ h1, h2, h3 {
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
+    margin-bottom: 7px;
 }
 
 .wine-name {
@@ -174,10 +197,11 @@ h1, h2, h3 {
     color: var(--wine-dark);
     font-size: 1.5rem;
     font-weight: 700;
-    margin: 7px 0 9px;
+    margin-bottom: 9px;
 }
 
 .wine-detail {
+    color: var(--text);
     line-height: 1.62;
     margin-top: 7px;
 }
@@ -199,7 +223,9 @@ h1, h2, h3 {
     background: #f7f0df;
     border-left: 4px solid var(--gold);
     color: #5c4d31;
+    line-height: 1.6;
     margin: 20px 0;
+    font-size: 0.91rem;
 }
 
 div.stButton > button {
@@ -217,17 +243,45 @@ div.stButton > button:hover {
     color: white;
 }
 
+div[data-testid="stAlert"] {
+    border-radius: 14px;
+}
+
+hr {
+    border-color: var(--border);
+}
+
 .footer {
     text-align: center;
     color: var(--muted);
     font-size: 0.82rem;
+    line-height: 1.7;
     margin-top: 50px;
+}
+
+@media (max-width: 700px) {
+    .hero {
+        padding: 36px 27px;
+    }
+
+    .age-card {
+        padding: 39px 25px;
+        margin-top: 30px;
+    }
+
+    .age-title {
+        font-size: 2.4rem;
+    }
 }
 </style>
     """,
     unsafe_allow_html=True
 )
 
+
+# =========================================================
+# SAFE HTML
+# =========================================================
 
 def safe(value):
     return html.escape(str(value))
@@ -246,22 +300,26 @@ if "age_declined" not in st.session_state:
 
 if not st.session_state.age_confirmed:
 
-    st.markdown(
+    age_html = (
         '<div class="age-card">'
         '<div class="age-label">WineHouse</div>'
         '<div class="age-title">Are you 18 or older?</div>'
         '<div class="age-text">'
         'This website contains information about alcoholic beverages. '
-        'Please confirm that you are at least 18 years old before entering.'
+        'Please confirm that you are at least 18 years old before '
+        'entering the WineHouse Wine Finder.'
         '</div>'
-        '</div>',
+        '</div>'
+    )
+
+    st.markdown(
+        age_html,
         unsafe_allow_html=True
     )
 
     yes_column, no_column = st.columns(2)
 
     with yes_column:
-
         if st.button(
             "Yes, I am 18 or older",
             type="primary",
@@ -272,7 +330,6 @@ if not st.session_state.age_confirmed:
             st.rerun()
 
     with no_column:
-
         if st.button(
             "No, I am under 18",
             use_container_width=True
@@ -280,7 +337,6 @@ if not st.session_state.age_confirmed:
             st.session_state.age_declined = True
 
     if st.session_state.age_declined:
-
         st.warning(
             "You must be 18 or older to enter the WineHouse Wine Finder."
         )
@@ -293,20 +349,15 @@ if not st.session_state.age_confirmed:
 # =========================================================
 
 try:
-
     client = genai.Client(
-        api_key=st.secrets["GEMINI_API_KEY"],
-        http_options=types.HttpOptions(
-            timeout=20000
-        )
+        api_key=st.secrets["GEMINI_API_KEY"]
     )
 
 except Exception as error:
-
     st.error(
-        f"AI connection error: {error}"
+        "The AI service could not be initialized. "
+        f"Technical detail: {error}"
     )
-
     st.stop()
 
 
@@ -322,16 +373,13 @@ def determine_wine_type(row):
         + str(row["ProductName"])
     ).lower()
 
-    if any(
-        word in text
-        for word in [
-            "sparkling",
-            "champagne",
-            "prosecco",
-            "crémant",
-            "cremant",
-            "cava"
-        ]
+    if (
+        "sparkling" in text
+        or "champagne" in text
+        or "prosecco" in text
+        or "crémant" in text
+        or "cremant" in text
+        or "cava" in text
     ):
         return "Sparkling"
 
@@ -380,14 +428,12 @@ def load_events():
     ]
 
     if missing:
-
         raise ValueError(
             "events.csv is missing: "
             + ", ".join(missing)
         )
 
     for column in required:
-
         dataframe[column] = (
             dataframe[column]
             .fillna("")
@@ -452,14 +498,12 @@ def load_event_wines():
     ]
 
     if missing:
-
         raise ValueError(
             "event_wines.csv is missing: "
             + ", ".join(missing)
         )
 
     for column in required:
-
         dataframe[column] = (
             dataframe[column]
             .fillna("")
@@ -509,22 +553,20 @@ def load_event_wines():
 
 
 try:
-
     events = load_events()
     event_wines = load_event_wines()
 
 except Exception as error:
-
     st.error(
         "The WineHouse data files could not be loaded. "
+        "Make sure events.csv and event_wines.csv are next to app.py. "
         f"Technical detail: {error}"
     )
-
     st.stop()
 
 
 # =========================================================
-# CONNECT EVENTS AND WINES
+# CONNECT EVENTS TO WINES
 # =========================================================
 
 event_name_lookup = dict(
@@ -538,12 +580,13 @@ event_name_lookup = dict(
 def wines_for_event(event_id):
 
     return event_wines[
-        event_wines["EventID"]
-        == event_id
+        event_wines["EventID"] == event_id
     ].copy()
 
 
-def create_candidates(wine_rows):
+def create_candidates(
+    wine_rows
+):
 
     candidates = []
 
@@ -554,11 +597,7 @@ def create_candidates(wine_rows):
 
         candidates.append(
             {
-                "record_id": (
-                    event_id
-                    + "|"
-                    + product_id
-                ),
+                "record_id": event_id + "|" + product_id,
                 "event": event_name_lookup.get(
                     event_id,
                     "Tasting"
@@ -573,6 +612,10 @@ def create_candidates(wine_rows):
     return candidates
 
 
+# =========================================================
+# FILTERING
+# =========================================================
+
 def filter_wines(
     selected_event_id,
     selected_type,
@@ -582,21 +625,18 @@ def filter_wines(
     filtered = event_wines.copy()
 
     if selected_event_id is not None:
-
         filtered = filtered[
             filtered["EventID"]
             == selected_event_id
         ]
 
     if selected_type != UNKNOWN:
-
         filtered = filtered[
             filtered["WineType"]
             == selected_type
         ]
 
     if selected_country != UNKNOWN:
-
         filtered = filtered[
             filtered["CountryOrOrigin"]
             .str.lower()
@@ -607,7 +647,7 @@ def filter_wines(
 
 
 # =========================================================
-# JSON RESPONSE
+# JSON CLEANING
 # =========================================================
 
 def clean_json_response(text):
@@ -615,7 +655,6 @@ def clean_json_response(text):
     cleaned = str(text).strip()
 
     if cleaned.startswith("```"):
-
         cleaned = (
             cleaned
             .replace("```json", "")
@@ -631,7 +670,6 @@ def clean_json_response(text):
         first_brace != -1
         and last_brace > first_brace
     ):
-
         cleaned = cleaned[
             first_brace:last_brace + 1
         ]
@@ -671,7 +709,8 @@ def rank_with_ai(
     prompt = f"""
 You are the matching engine for the WineHouse Wine Finder.
 
-Compare the user's description only with the supplied wine records.
+The user is trying to identify a wine from an imperfect memory.
+Only wines from the supplied database records are valid answers.
 
 USER DESCRIPTION:
 {description}
@@ -679,7 +718,7 @@ USER DESCRIPTION:
 ELIGIBLE WINE RECORDS:
 {records_json}
 
-Return only valid JSON:
+Return ONLY valid JSON:
 
 {{
   "enough_information": true,
@@ -693,17 +732,23 @@ Return only valid JSON:
 }}
 
 Rules:
+
 1. Return at most three matches.
-2. Use only exact supplied record_id values.
-3. Do not invent or introduce wines.
-4. Rank using semantic similarity.
-5. Confidence must be Strong possible match,
-   Possible match, or Weak possible match.
-6. If there is no suitable match, set enough_information to false,
-   return an empty matches list, and ask one short clarifying question.
-7. If the information is too vague, set enough_information to false,
-   return an empty matches list, and ask one short clarifying question.
-8. Do not claim current stock availability.
+2. Use only exact record_id values supplied above.
+3. Do not invent wines or introduce outside products.
+4. Use semantic reasoning, not only exact word matching.
+5. Reasonable equivalents include:
+   not heavy = light;
+   powerful = rich or full-bodied;
+   bubbles = sparkling;
+   crisp may relate to dry, light or fresh.
+6. Confidence must be:
+   Strong possible match,
+   Possible match,
+   or Weak possible match.
+7. If the description is too vague, set enough_information to false,
+   return no matches, and ask one short clarifying question.
+8. Do not claim current availability.
 9. Return JSON only.
 """
 
@@ -711,16 +756,10 @@ Rules:
 
         response = client.models.generate_content(
             model=MODEL_NAME,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.1,
-                max_output_tokens=600
-            )
+            contents=prompt
         )
 
         if not response.text:
-
             raise ValueError(
                 "The AI returned an empty response."
             )
@@ -735,7 +774,6 @@ Rules:
             result,
             dict
         ):
-
             raise ValueError(
                 "The AI response was not a JSON object."
             )
@@ -749,17 +787,13 @@ Rules:
         if (
             "503" in error_text
             or "UNAVAILABLE" in error_text
-            or "TIMEOUT" in error_text
-            or "DEADLINE" in error_text
         ):
-
             st.error(
-                "The AI service did not respond in time. "
+                "The AI service is temporarily unavailable. "
                 "Please click Search wines again."
             )
 
         else:
-
             st.error(
                 "AI matching could not be completed. "
                 f"Technical detail: {error}"
@@ -769,7 +803,7 @@ Rules:
 
 
 # =========================================================
-# VALIDATE MATCHES
+# VALIDATE GEMINI RESPONSE
 # =========================================================
 
 def validate_matches(
@@ -778,18 +812,18 @@ def validate_matches(
 ):
 
     allowed = {
-        candidate["record_id"]: candidate
+        candidate["record_id"\]: candidate
         for candidate in candidates
     }
 
-    valid_confidences = [
+    valid_confidences= [
         "Strong possible match",
         "Possible match",
         "Weak possible match"
     ]
 
     results = []
-    used = set()
+    already_used = set()
 
     for match in ai_result.get(
         "matches",
@@ -806,7 +840,7 @@ def validate_matches(
         if record_id not in allowed:
             continue
 
-        if record_id in used:
+        if record_id in already_used:
             continue
 
         confidence = str(
@@ -817,10 +851,7 @@ def validate_matches(
         ).strip()
 
         if confidence not in valid_confidences:
-
-            confidence = (
-                "Possible match"
-            )
+            confidence = "Possible match"
 
         results.append(
             {
@@ -829,7 +860,7 @@ def validate_matches(
             }
         )
 
-        used.add(record_id)
+        already_used.add(record_id)
 
         if len(results) == 3:
             break
@@ -838,7 +869,7 @@ def validate_matches(
 
 
 # =========================================================
-# DISPLAY
+# DISPLAY WINE
 # =========================================================
 
 def display_wine(
@@ -847,74 +878,83 @@ def display_wine(
     confidence=None
 ):
 
-    rank = ""
+    rank_html = ""
 
     if position is not None:
-
-        rank = (
+        rank_html = (
             '<div class="wine-rank">'
-            f"Match {safe(position)}"
-            "</div>"
+            + "Match "
+            + safe(position)
+            + "</div>"
         )
 
-    tags = "".join(
-        '<span class="tag">'
-        + safe(value)
-        + "</span>"
-        for value in [
-            wine["type"],
-            wine["country"],
-            wine["style"]
-        ]
-        if str(value).strip()
-    )
+    tag_values = [
+        wine["type"],
+        wine["country"],
+        wine["style"]
+    ]
+
+    tags_html = ""
+
+    for tag in tag_values:
+        if str(tag).strip():
+            tags_html += (
+                '<span class="tag">'
+                + safe(tag)
+                + "</span>"
+            )
 
     confidence_html = ""
 
     if confidence:
-
         confidence_html = (
             '<div class="wine-detail">'
-            "<strong>Confidence:</strong> "
+            '<strong>Confidence:</strong> '
             + safe(confidence)
             + "</div>"
         )
 
-    st.markdown(
+    card_html = (
         '<div class="wine-card">'
-        + rank
+        + rank_html
         + '<div class="wine-name">'
         + safe(wine["name"])
         + "</div>"
-        + tags
+        + "<div>"
+        + tags_html
+        + "</div>"
         + '<div class="wine-detail">'
         + "<strong>Tasting:</strong> "
         + safe(wine["event"])
         + "</div>"
         + confidence_html
-        + "</div>",
+        + "</div>"
+    )
+
+    st.markdown(
+        card_html,
         unsafe_allow_html=True
     )
 
 
 # =========================================================
-# PAGE
+# HEADER
 # =========================================================
 
-st.markdown(
+hero_html = (
     '<section class="hero">'
-    '<div class="hero-label">'
-    'WineHouse discovery'
-    '</div>'
-    '<div class="hero-title">'
-    'Find the wine you remember.'
-    '</div>'
+    '<div class="hero-label">WineHouse discovery</div>'
+    '<div class="hero-title">Find the wine you remember.</div>'
     '<div class="hero-text">'
     'Choose a tasting if you remember it, add whatever details '
     'you know, and let AI compare your description with the '
     'WineHouse tasting and wine records.'
-    '</div>'
-    '</section>',
+    "</div>"
+    "</section>"
+)
+
+st.markdown(
+    hero_html,
     unsafe_allow_html=True
 )
 
@@ -924,9 +964,7 @@ st.markdown(
 # =========================================================
 
 st.markdown(
-    '<div class="section-label">'
-    'Step one'
-    '</div>',
+    '<div class="section-label">Step one</div>',
     unsafe_allow_html=True
 )
 
@@ -976,10 +1014,11 @@ if selected_event_id is not None:
             expanded=True
         ):
 
-            for wine in create_candidates(
+            tasting_candidates = create_candidates(
                 selected_wines
-            ):
+            )
 
+            for wine in tasting_candidates:
                 display_wine(
                     wine
                 )
@@ -999,9 +1038,7 @@ else:
 st.divider()
 
 st.markdown(
-    '<div class="section-label">'
-    'Step two'
-    '</div>',
+    '<div class="section-label">Step two</div>',
     unsafe_allow_html=True
 )
 
@@ -1009,21 +1046,19 @@ st.subheader(
     "What do you remember about the wine?"
 )
 
-left_column, right_column = st.columns(
-    2
-)
+left_column, right_column = st.columns(2)
 
 
 with left_column:
 
     wine_types = sorted(
-        wine_type
-        for wine_type in event_wines[
+        type_name
+        for type_name in event_wines[
             "WineType"
         ].unique().tolist()
         if (
-            wine_type
-            and wine_type != "Other"
+            type_name
+            and type_name != "Other"
         )
     )
 
@@ -1070,9 +1105,7 @@ with right_column:
 st.divider()
 
 st.markdown(
-    '<div class="section-label">'
-    'Step three'
-    '</div>',
+    '<div class="section-label">Step three</div>',
     unsafe_allow_html=True
 )
 
@@ -1089,15 +1122,9 @@ if st.button(
 
     supplied_information = sum(
         [
-            selected_event_id
-            is not None,
-
-            selected_type
-            != UNKNOWN,
-
-            selected_country
-            != UNKNOWN,
-
+            selected_event_id is not None,
+            selected_type != UNKNOWN,
+            selected_country != UNKNOWN,
             bool(
                 description.strip()
             )
@@ -1121,26 +1148,26 @@ if st.button(
         if filtered.empty:
 
             st.warning(
-                "No wines match the selected details. "
-                "Try changing one answer to "
-                "'I don't remember'."
+                "No wines match all selected details. "
+                "Try changing one answer to 'I don't remember'."
             )
 
         elif not description.strip():
+
+            candidates = create_candidates(
+                filtered
+            )
 
             st.markdown(
                 "## Matching wines"
             )
 
             st.write(
-                "These wines match the selected filters. "
+                "These wines match the filters you selected. "
                 "Add a description if you want AI to rank them."
             )
 
-            for wine in create_candidates(
-                filtered
-            ):
-
+            for wine in candidates:
                 display_wine(
                     wine
                 )
@@ -1152,8 +1179,7 @@ if st.button(
             )
 
             with st.spinner(
-                "Comparing your description "
-                "with the wine records..."
+                "Comparing your description with the wine records..."
             ):
 
                 ai_result = rank_with_ai(
@@ -1173,8 +1199,8 @@ if st.button(
                 if not enough_information:
 
                     st.warning(
-                        "No suitable wine could be identified "
-                        "from the information provided."
+                        "There is not enough information "
+                        "to identify the wine confidently."
                     )
 
                     question = str(
@@ -1185,9 +1211,8 @@ if st.button(
                     ).strip()
 
                     if question:
-
                         st.write(
-                            f"**Try adding this detail:** "
+                            f"**One helpful question:** "
                             f"{question}"
                         )
 
@@ -1201,9 +1226,8 @@ if st.button(
                     if not matches:
 
                         st.warning(
-                            "No suitable wine could be matched. "
-                            "Try changing a filter or adding "
-                            "another detail."
+                            "No reliable match was returned. "
+                            "Try adding another detail."
                         )
 
                     else:
@@ -1227,8 +1251,8 @@ if st.button(
 
                         st.markdown(
                             '<div class="verification">'
-                            'Current bottle availability should '
-                            'be checked separately before purchase.'
+                            'Current bottle availability should be '
+                            'checked separately before purchase.'
                             '</div>',
                             unsafe_allow_html=True
                         )
