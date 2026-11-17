@@ -1,5 +1,6 @@
 import html
 import json
+import time
 
 import pandas as pd
 import streamlit as st
@@ -508,7 +509,6 @@ def load_event_wines():
             .str.strip()
         )
 
-    # The export-safe Azure SQL changed commas in Style to slashes.
     dataframe["Style"] = (
         dataframe["Style"]
         .str.replace(" /", ",", regex=False)
@@ -740,12 +740,53 @@ Rules:
 
     try:
 
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt
-        )
+        response = None
+        last_error = None
+
+        for attempt in range(3):
+
+            try:
+
+                response = client.models.generate_content(
+                    model=MODEL_NAME,
+                    contents=prompt
+                )
+
+                break
+
+            except Exception as error:
+
+                last_error = error
+                error_text = str(error).upper()
+
+                temporary_error = (
+                    "503" in error_text
+                    or "UNAVAILABLE" in error_text
+                    or "RESOURCE_EXHAUSTED" in error_text
+                    or "429" in error_text
+                )
+
+                if temporary_error and attempt < 2:
+
+                    time.sleep(
+                        2 * (attempt + 1)
+                    )
+
+                    continue
+
+                raise error
+
+        if response is None:
+
+            if last_error is not None:
+                raise last_error
+
+            raise ValueError(
+                "The AI service did not return a response."
+            )
 
         if not response.text:
+
             raise ValueError(
                 "The AI returned an empty response."
             )
@@ -757,6 +798,7 @@ Rules:
         )
 
         if not isinstance(result, dict):
+
             raise ValueError(
                 "The AI response was not a JSON object."
             )
@@ -765,10 +807,26 @@ Rules:
 
     except Exception as error:
 
-        st.error(
-            "AI matching could not be completed. "
-            f"Technical detail: {error}"
-        )
+        error_text = str(error).upper()
+
+        if (
+            "503" in error_text
+            or "UNAVAILABLE" in error_text
+            or "RESOURCE_EXHAUSTED" in error_text
+            or "429" in error_text
+        ):
+
+            st.error(
+                "The AI service is temporarily busy. "
+                "Please wait a moment and click Search wines again."
+            )
+
+        else:
+
+            st.error(
+                "AI matching could not be completed. "
+                f"Technical detail: {error}"
+            )
 
         return None
 
